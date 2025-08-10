@@ -1,24 +1,46 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Redundant where" #-}
 module Main where
 
 import Fermions as F
 import Bosons (bosonVacuum, bosonToList, createBoson, annihilateBoson, singleBoson)
-import Basis (newKetMap, ketQNumber, singleFermions, Ket (..), qnumToStates, singleBosons, prettyPrintKet, liftBosonOp, liftFermionOp, twoFermions, twoBosons, qnumToStatesToIndex)
+import Basis (newKetMap, ketQNumber, singleFermions, Ket (..), qnumToStates, singleBosons, prettyPrintKet, liftBosonOp, twoFermions, twoBosons, qnumToStatesToIndex)
 import Fourier (oddKRange, getMomentum)
 import qualified Data.Map as Map
 import Control.Monad ((>=>))
-import Control.Arrow (Arrow(..))
 import MonoVec (MonoVec(..))
 import qualified BlockDiagonal as Block
 import BlockDiagonal (BlockDiagonalOperator(..))
-import Yukawa (buildPotential, getCouplings, buildFermionNumber, freeHamiltonianOp, particleEnergy)
+import Yukawa (buildPotential, getCouplings, freeHamiltonianOp, particleEnergy)
 import Data.Bifunctor (bimap)
 import Utils (Serializable(serialize))
 import Data.List (nub)
+import qualified Config
 
 main :: IO ()
-main = test4
+main = run
+
+run :: IO ()
+run = do
+  result <- Config.load "config.toml"
+  let config = case result of
+       Left errs -> error errs
+       Right x -> x
+  let nF = Config.nFermionModes config
+  let nB = Config.nBosonModes config
+  let fermionKs = oddKRange nF
+  let bosonKs = oddKRange nB
+  let fermions = singleFermions nF
+  let bosons = nub $ bosonVacuum : singleBosons nB <> twoBosons nB
+  let kets = [Ket f b | f <- fermions, b <- bosons]
+  let ketMap = newKetMap (ketQNumber fermionKs bosonKs) kets
+  let couplings = getCouplings fermionKs bosonKs
+  let potential = buildPotential couplings ketMap
+  let len = Config.length config
+  let h0 = freeHamiltonianOp fermionEs bosonEs
+      fermionEs = map (particleEnergy (Config.fermionMass config) . getMomentum len) fermionKs
+      bosonEs = map (particleEnergy (Config.bosonMass config) . getMomentum len) bosonKs
+  let out = unlines ["ketMap", serialize ketMap, "H0", serialize (Block.build h0 ketMap), "V", serialize potential]
+  writeFile "out.txt" out
+
 
 test5 :: IO ()
 test5 = do
@@ -44,7 +66,7 @@ test4 = do
   let couplings = getCouplings fermionKs bosonKs
   -- print couplings
   let potential = buildPotential couplings ketMap
-  let h0 = freeHamiltonianOp fermionEs bosonEs where
+  let h0 = freeHamiltonianOp fermionEs bosonEs
       fermionEs = map (particleEnergy fermionMass . getMomentum len) fermionKs
       bosonEs = map (particleEnergy bosonMass . getMomentum len) bosonKs
   --let blockOp = buildFermionNumber n ketMap

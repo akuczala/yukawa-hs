@@ -4,10 +4,10 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import MonoVec (Op, MonoVec (..))
 import Data.Maybe (fromMaybe)
-import Basis (KetMap (..), QNumbers (nFermions, kTot))
+import Basis (KetMap (..))
 import BaseTypes (Phase)
 import Utils (zipMapsWith, Serializable(..))
-import Data.List (intercalate, intersperse)
+import Data.List (intercalate)
 
 newtype BlockDiagonalOperator q a = BlockDiagonalOperator (Map q (Map (Int, Int) a))
   deriving Functor

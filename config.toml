@@ -1,0 +1,5 @@
+fermionMass = 1.0
+bosonMass = 0.5
+length = 10.0
+nFermionModes = 31
+nBosonModes = 31
