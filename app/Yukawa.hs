@@ -33,3 +33,4 @@ buildFermionNumber :: (Ord q) => Int -> KetMap q Ket -> BlockDiagonalOperator q 
 buildFermionNumber nModes ketMap = foldl1 (Block.+) (fmap buildOp [0.. nModes - 1]) where
   buildOp k = Block.build op ketMap where
     op = liftFermionOp $ annihilateFermion k >=> createFermion k
+
