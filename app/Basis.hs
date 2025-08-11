@@ -12,7 +12,7 @@ import MonoVec (Op)
 import qualified Fermions as F
 import qualified Bosons as B
 import Utils (Serializable (serialize))
-import Data.List (intercalate)
+import Data.List (intercalate, nub)
 
 -- buildBasisWithLimit :: Count -> ([Count] -> Bool) -> [[Mode]]
 -- buildBasisWithLimit n pred = go initMembers where
@@ -28,9 +28,14 @@ twoFermions n = [F.combine f1 f2 | f1 <- fs, f2 <- fs, f1 < f2] where
 singleBosons :: Size -> [Bosons]
 singleBosons nb = map singleBoson [0..nb - 1]
 
-twoBosons :: Size -> [Bosons]
-twoBosons n = [B.combine b1 b2 | b1 <- bs, b2 <- bs] where
-  bs = singleBosons n
+nextNBosons :: Size -> [Bosons] -> [Bosons]
+nextNBosons nb bs = nub [B.combine b1 b2 | b1 <- bs, b2 <- singleBosons nb]
+
+nBosons :: Size -> Int -> [Bosons]
+nBosons nb n = case n of
+  0 -> [bosonVacuum]
+  1 -> singleBosons nb
+  _ -> nextNBosons nb (nBosons nb (n -1))
 
 data Ket = Ket {_ketFermions :: Fermions, _ketBosons :: Bosons}
   deriving (Show, Eq, Ord)

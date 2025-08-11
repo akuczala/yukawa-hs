@@ -2,7 +2,7 @@ module Main where
 
 import Fermions as F
 import Bosons (bosonVacuum, bosonToList, createBoson, annihilateBoson, singleBoson)
-import Basis (newKetMap, ketQNumber, singleFermions, Ket (..), qnumToStates, singleBosons, prettyPrintKet, liftBosonOp, twoFermions, twoBosons, qnumToStatesToIndex, liftFermionOp)
+import Basis (newKetMap, ketQNumber, singleFermions, Ket (..), qnumToStates, singleBosons, prettyPrintKet, liftBosonOp, twoFermions, qnumToStatesToIndex, liftFermionOp, nBosons)
 import Fourier (oddKRange, getMomentum, kToMode)
 import qualified Data.Map as Map
 import Control.Monad ((>=>))
@@ -25,6 +25,9 @@ test6 = do
   let k = 1
   print [(-l, k - l) | l <- ks, (minimum ks <= k - l) && (k - l <= maximum ks)]
 
+withDataHeaderFooter :: String -> String -> String
+withDataHeaderFooter label s = unlines ["# " <> label, s, "##"]
+
 run :: IO ()
 run = do
   result <- Config.load "config.toml"
@@ -36,7 +39,7 @@ run = do
   let fermionKs = oddKRange nF
   let bosonKs = oddKRange nB
   let fermions = singleFermions nF
-  let bosons = nub $ bosonVacuum : singleBosons nB <> twoBosons nB
+  let bosons = concatMap (nBosons nB) [0..4]
   let kets = [Ket f b | f <- fermions, b <- bosons]
   let ketMap = newKetMap (ketQNumber fermionKs bosonKs) kets
   let couplings = getCouplings fermionKs bosonKs
@@ -45,16 +48,17 @@ run = do
   let h0 = freeHamiltonianOp fermionEs bosonEs
       fermionEs = map (particleEnergy (Config.fermionMass config) . getMomentum len) fermionKs
       bosonEs = map (particleEnergy (Config.bosonMass config) . getMomentum len) bosonKs
-  let adaga k l = liftFermionOp (annihilateFermion (kToMode nF l) >=> createFermion (kToMode nF k))
-  let posOps = [buildPositionalNumberOpFourier adaga fermionKs ketMap k | k <- fermionKs]
-  let out = unlines [ "ketMap"
-        , serialize ketMap
-        , "H0"
-        , serialize (BlockDiag.build h0 ketMap)
-        , "V"
-        , serialize potential
-        , "posOp"
-        , serialize posOp
+  let adagaF k l = liftFermionOp (annihilateFermion (kToMode nF l) >=> createFermion (kToMode nF k))
+  let adagaB k l = liftBosonOp (annihilateBoson (kToMode nB l) >=> createBoson (kToMode nB k))
+  let fermiPosOps = [buildPositionalNumberOpFourier adagaF fermionKs ketMap k | k <- fermionKs]
+  let bosePosOps = [buildPositionalNumberOpFourier adagaB bosonKs ketMap k | k <- bosonKs]
+  let out = unlines $ [ withDataHeaderFooter "ketMap" (serialize ketMap)
+        , withDataHeaderFooter "H0" (serialize (BlockDiag.build h0 ketMap))
+        , withDataHeaderFooter "V" (serialize potential)
+        ] <> [
+          withDataHeaderFooter ("fermiPosOp " <> show k) (serialize op) | (k, op) <- zip fermionKs fermiPosOps
+        ] <> [
+          withDataHeaderFooter ("bosePosOp " <> show k) (serialize op) | (k, op) <- zip bosonKs bosePosOps
         ]
   writeFile "out.txt" out
 
@@ -77,7 +81,7 @@ test4 = do
   -- let bosons = [bosonVacuum]
   -- let fermions = allFermions n
   let fermions = twoFermions n
-  let bosons = nub $ bosonVacuum : singleBosons n <> twoBosons n
+  let bosons = nub $ bosonVacuum : singleBosons n <> nBosons n 2
   let kets = [Ket f b | f <- fermions, b <- bosons]
   let ketMap = newKetMap (ketQNumber fermionKs bosonKs) kets
   let couplings = getCouplings fermionKs bosonKs
@@ -107,12 +111,13 @@ test3 = do
   print fermionKNumbers
   -- let bosons = [bosonVacuum]
   let fermions = fermionVacuum : singleFermions n <> twoFermions n
-  let bosons = bosonVacuum : singleBosons n <> twoBosons n
+  -- let bosons = bosonVacuum : singleBosons n <> nBosons n 2
+  let bosons = bosonVacuum : nBosons n 2
   let kets = [Ket f b | f <- fermions, b <- bosons]
   let ketMap = newKetMap (ketQNumber fermionKNumbers bosonKNumbers) kets
   --print $ fmap (first $ prettyPrintKet n) . Map.toList <$> qnumToStatesToIndex ketMap
   let targetIndex = 2
-  let testOp = liftBosonOp (annihilateBoson targetIndex) >=> liftBosonOp (createBoson 3 targetIndex)
+  let testOp = liftBosonOp (annihilateBoson targetIndex) >=> liftBosonOp (createBoson targetIndex)
   let testKet = Ket (singleFermion targetIndex) (singleBoson targetIndex)
   --print $ Map.lookup testKet $ stateToQNum ketMap  
   let testMv = testOp testKet
@@ -143,6 +148,5 @@ test1 = do
   print $ fmap (asList nf) mf
   let mf2 = createFermion 2 $ singleFermion 1
   print $ fmap (asList nf) mf2
-  let bmax = 2
-  let mb = createBoson bmax 1 bosonVacuum
+  let mb = createBoson 1 bosonVacuum
   print $ fmap bosonToList mb

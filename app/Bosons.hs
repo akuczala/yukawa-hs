@@ -39,13 +39,17 @@ annihilateBoson mode (Bosons b) = case bosonOccupation mode (Bosons b) of
     m -> Map.insert mode m b
     )
 
-createBoson :: Count -> Mode -> Op Bosons
-createBoson nMax mode (Bosons b) = case bosonOccupation mode (Bosons b) of
+createBoson :: Mode -> Op Bosons
+createBoson mode (Bosons b) = let n = bosonOccupation mode (Bosons b) in
+  MonoVec (sqrt (fromIntegral $ n + 1)) $ Bosons (Map.insert mode (n + 1) b)
+
+createBosonLimited :: Count -> Mode -> Op Bosons
+createBosonLimited nMax mode (Bosons b) = case bosonOccupation mode (Bosons b) of
   n | n == nMax -> ZeroVec
   n -> MonoVec (sqrt (fromIntegral $ n + 1)) $ Bosons (Map.insert mode (n + 1) b)
 
-bosonNumber :: Count -> Mode -> Op Bosons
-bosonNumber nMax mode = annihilateBoson mode >=> createBoson nMax mode
+bosonNumber :: Mode -> Op Bosons
+bosonNumber mode = annihilateBoson mode >=> createBoson mode
 
 bosonToList :: Bosons -> [(Mode, Count)]
 bosonToList (Bosons b) = Map.assocs b
