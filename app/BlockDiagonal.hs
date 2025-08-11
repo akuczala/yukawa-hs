@@ -24,7 +24,7 @@ build op ketMap = BlockDiagonalOperator $ fmap perSector (qnumToStatesToIndex ke
   perSector ketToIndex = Map.foldlWithKey go Map.empty ketToIndex  where
     go accMap ket i = fromMaybe accMap $ do
       (j, ph) <- applyOp ket
-      return $ Map.insertWith (Prelude.+) (i, j) ph accMap
+      return $ Map.insertWith (Prelude.+) (j, i) ph accMap
     applyOp inKet = case op inKet of
       ZeroVec -> Nothing
       MonoVec ph outKet -> do

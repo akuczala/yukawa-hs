@@ -2,14 +2,15 @@ module Main where
 
 import Fermions as F
 import Bosons (bosonVacuum, bosonToList, createBoson, annihilateBoson, singleBoson)
-import Basis (newKetMap, ketQNumber, singleFermions, Ket (..), qnumToStates, singleBosons, prettyPrintKet, liftBosonOp, twoFermions, twoBosons, qnumToStatesToIndex)
-import Fourier (oddKRange, getMomentum)
+import Basis (newKetMap, ketQNumber, singleFermions, Ket (..), qnumToStates, singleBosons, prettyPrintKet, liftBosonOp, twoFermions, twoBosons, qnumToStatesToIndex, liftFermionOp)
+import Fourier (oddKRange, getMomentum, kToMode)
 import qualified Data.Map as Map
 import Control.Monad ((>=>))
 import MonoVec (MonoVec(..))
-import qualified BlockDiagonal as Block
-import BlockDiagonal (BlockDiagonalOperator(..))
-import Yukawa (buildPotential, getCouplings, freeHamiltonianOp, particleEnergy)
+import qualified Block as Block
+import qualified BlockDiagonal as BlockDiag
+import BlockDiagonal(BlockDiagonalOperator(..))
+import Yukawa (buildPotential, getCouplings, freeHamiltonianOp, particleEnergy, buildPositionalNumberOpFourier)
 import Data.Bifunctor (bimap)
 import Utils (Serializable(serialize))
 import Data.List (nub)
@@ -17,6 +18,12 @@ import qualified Config
 
 main :: IO ()
 main = run
+
+test6 :: IO ()
+test6 = do
+  let ks = oddKRange 5
+  let k = 1
+  print [(-l, k - l) | l <- ks, (minimum ks <= k - l) && (k - l <= maximum ks)]
 
 run :: IO ()
 run = do
@@ -38,7 +45,17 @@ run = do
   let h0 = freeHamiltonianOp fermionEs bosonEs
       fermionEs = map (particleEnergy (Config.fermionMass config) . getMomentum len) fermionKs
       bosonEs = map (particleEnergy (Config.bosonMass config) . getMomentum len) bosonKs
-  let out = unlines ["ketMap", serialize ketMap, "H0", serialize (Block.build h0 ketMap), "V", serialize potential]
+  let adaga k l = liftFermionOp (annihilateFermion (kToMode nF l) >=> createFermion (kToMode nF k))
+  let posOps = [buildPositionalNumberOpFourier adaga fermionKs ketMap k | k <- fermionKs]
+  let out = unlines [ "ketMap"
+        , serialize ketMap
+        , "H0"
+        , serialize (BlockDiag.build h0 ketMap)
+        , "V"
+        , serialize potential
+        , "posOp"
+        , serialize posOp
+        ]
   writeFile "out.txt" out
 
 
@@ -78,7 +95,7 @@ test4 = do
   putStrLn "ketMap"
   putStrLn $ serialize ketMap
   putStrLn "H0"
-  putStrLn $ serialize (Block.build h0 ketMap)
+  putStrLn $ serialize (BlockDiag.build h0 ketMap)
   putStrLn "\nV"
   putStrLn (serialize potential)
 
@@ -105,7 +122,7 @@ test3 = do
   --print $ Map.lookup outKet $ stateToQNum ketMap  
   -- print $ map testOp <$> qnumToStates ketMap
   --print $ (\m -> first testOp <$> Map.toList m) <$> qnumToStatesToIndex ketMap
-  let dbo = Block.build testOp ketMap
+  let dbo = BlockDiag.build testOp ketMap
   print $ Map.toList . (\(BlockDiagonalOperator x) -> x) $ dbo
 
 

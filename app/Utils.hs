@@ -8,3 +8,6 @@ zipMapsWith f = Merge.merge Merge.preserveMissing Merge.preserveMissing (Merge.z
 
 class Serializable a where
   serialize :: a -> String
+
+instance Serializable a => Serializable (a, a) where
+  serialize (a1, a2) = "(" <> serialize a1 <> "," <> serialize a2 <> ")"
