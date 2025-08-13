@@ -5,6 +5,7 @@ import Data.Map(Map)
 import BaseTypes
 import Control.Monad ((>=>))
 import Utils (zipMapsWith, Serializable (..))
+import Data.List (nub)
 
 
 
@@ -21,6 +22,18 @@ instance Ord Bosons where
 
 bosonVacuum :: Bosons
 bosonVacuum = Bosons Map.empty
+
+singleBosons :: Size -> [Bosons]
+singleBosons nb = map singleBoson [0..nb - 1]
+
+nextNBosons :: Size -> [Bosons] -> [Bosons]
+nextNBosons nb bs = nub [combine b1 b2 | b1 <- bs, b2 <- singleBosons nb]
+
+makeNBosons :: Size -> Int -> [Bosons]
+makeNBosons nb n = case n of
+  0 -> [bosonVacuum]
+  1 -> singleBosons nb
+  _ -> nextNBosons nb (makeNBosons nb (n -1))
 
 -- allBosons :: Int -> Int -> Bosons
 -- allBosons nMax nModes = scanl _ 

@@ -1,41 +1,20 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Basis where
-import BaseTypes (Size, enumerate)
-import Fermions (Fermions, singleFermion, fermionSum, countFermions, asList, combine)
+import BaseTypes (enumerate)
+import Fermions (Fermions, fermionSum, countFermions, asList)
 import Bosons
 import Control.Lens.TH ( makeLenses )
 import Control.Lens ((^.))
 import Data.Map (Map)
 import qualified Data.Map as Map
 import MonoVec (Op)
-import qualified Fermions as F
-import qualified Bosons as B
 import Utils (Serializable (serialize))
-import Data.List (intercalate, nub)
+import Data.List (intercalate)
 
 -- buildBasisWithLimit :: Count -> ([Count] -> Bool) -> [[Mode]]
 -- buildBasisWithLimit n pred = go initMembers where
 --   initMembers = filter pred $ [] : [[mode] | mode <-[0 .. n - 1]]
-
-singleFermions :: Size -> [Fermions]
-singleFermions nf = map singleFermion [0..nf - 1]
-
-twoFermions :: Size -> [Fermions]
-twoFermions n = [F.combine f1 f2 | f1 <- fs, f2 <- fs, f1 < f2] where
-  fs = singleFermions n
-
-singleBosons :: Size -> [Bosons]
-singleBosons nb = map singleBoson [0..nb - 1]
-
-nextNBosons :: Size -> [Bosons] -> [Bosons]
-nextNBosons nb bs = nub [B.combine b1 b2 | b1 <- bs, b2 <- singleBosons nb]
-
-nBosons :: Size -> Int -> [Bosons]
-nBosons nb n = case n of
-  0 -> [bosonVacuum]
-  1 -> singleBosons nb
-  _ -> nextNBosons nb (nBosons nb (n -1))
 
 data Ket = Ket {_ketFermions :: Fermions, _ketBosons :: Bosons}
   deriving (Show, Eq, Ord)

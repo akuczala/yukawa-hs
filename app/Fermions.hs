@@ -4,9 +4,11 @@ import BaseTypes(Mode, Parity(..), toSign, Size, enumerate)
 import MonoVec(MonoVec(..), Op)
 
 import Data.Bits (Bits(popCount, shiftL, complement, (.&.)), testBit)
-import Control.Monad ((>=>))
+import Control.Monad ((>=>), guard)
 import GHC.Bits (setBit, Bits ((.|.), xor))
 import Utils (Serializable (..))
+import Data.Maybe (catMaybes)
+import Data.List (nub)
 
 
 newtype Fermions = Fermions Int
@@ -17,9 +19,6 @@ allFermions n = fmap Fermions [0 .. 2 ^ n - 1]
 
 fermionVacuum :: Fermions
 fermionVacuum = Fermions 0
-
-combine :: Fermions -> Fermions -> Fermions
-combine (Fermions x) (Fermions y) = Fermions $ xor x y
 
 fermionOccupation :: Mode -> Fermions -> Bool
 fermionOccupation mode (Fermions f) = testBit f mode
@@ -58,6 +57,23 @@ fermionNumber mode = annihilateFermion mode >=> createFermion mode
 
 singleFermion :: Mode -> Fermions
 singleFermion mode = Fermions $ setBit 0 mode
+
+singleFermions :: Size -> [Fermions]
+singleFermions nf = map singleFermion [0..nf - 1]
+
+combine :: Fermions -> Fermions -> Maybe Fermions
+combine (Fermions x) (Fermions y) = do
+  guard $ x .&. y == 0
+  return . Fermions $ xor x y
+
+nextNFermions :: Size -> [Fermions] -> [Fermions]
+nextNFermions n fs = nub $ catMaybes [combine f1 f2 | f1 <- fs, f2 <- singleFermions n]
+
+makeNFermions :: Size -> Int -> [Fermions]
+makeNFermions nf n = case n of
+  0 -> [fermionVacuum]
+  1 -> singleFermions nf
+  _ -> nextNFermions nf (makeNFermions nf (n -1))
 
 asList :: Size -> Fermions -> [Mode]
 asList size f = [ mode | mode <- [0 .. size - 1], fermionOccupation mode f ]

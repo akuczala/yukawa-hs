@@ -3,3 +3,9 @@ bosonMass = 0.5
 length = 10.0
 nFermionModes = 3
 nBosonModes = 3
+
+minBosonNumber = 0
+maxBosonNumber = 2
+
+minFermionNumber = 2
+maxFermionNumber = 2
