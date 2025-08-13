@@ -1,35 +1,43 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Config where
-import Toml (TomlCodec, double, int, decodeFileEither, TomlDecodeError, prettyTomlDecodeError)
+import qualified Toml
 import Toml.Codec ((.=))
 import qualified Control.Arrow as Arrow
+import Toml ( TomlCodec, TomlDecodeError )
 
-
-data Config = Config
-  { fermionMass :: Double
-  , bosonMass :: Double
-  , length :: Double
-  , nFermionModes :: Int
-  , nBosonModes :: Int
-  , minFermionNumber :: Int
-  , maxFermionNumber :: Int
-  , minBosonNumber :: Int
-  , maxBosonNumber :: Int
+data ParticleConfig = ParticleConfig
+  { mass :: Double
+  , nModes :: Int
+  , minNumber :: Int
+  , maxNumber :: Int
   }
   deriving Show
 
+getNumberRange :: ParticleConfig -> [Int]
+getNumberRange config = [minNumber config .. maxNumber config]
+
+data Config = Config
+  { outputPath :: String
+  , length :: Double
+  , fermionConfig :: ParticleConfig
+  , bosonConfig :: ParticleConfig
+  }
+  deriving Show
+
+particleConfigCodec :: TomlCodec ParticleConfig
+particleConfigCodec = ParticleConfig
+  <$> Toml.double "mass" .= mass
+  <*> Toml.int "nModes" .= nModes
+  <*> Toml.int "minNumber" .= minNumber
+  <*> Toml.int "maxNumber" .= maxNumber
+
 configCodec :: TomlCodec Config
 configCodec = Config
-  <$> Toml.double "fermionMass" .= fermionMass
-  <*> Toml.double "bosonMass" .= bosonMass
+  <$> Toml.string "outputPath" .= outputPath
   <*> Toml.double "length" .= Config.length
-  <*> Toml.int "nFermionModes" .= nFermionModes
-  <*> Toml.int "nBosonModes" .= nBosonModes
-  <*> Toml.int "minFermionNumber" .= minFermionNumber
-  <*> Toml.int "maxFermionNumber" .= maxFermionNumber
-  <*> Toml.int "minBosonNumber" .= minBosonNumber
-  <*> Toml.int "maxBosonNumber" .= maxBosonNumber
+  <*> Toml.table particleConfigCodec "fermions" .= fermionConfig
+  <*> Toml.table particleConfigCodec "bosons" .= bosonConfig
 
 formatErrors :: [TomlDecodeError] -> String
 formatErrors errs = unlines $ map (show . Toml.prettyTomlDecodeError) errs

@@ -8,7 +8,7 @@ import Control.Monad ((>=>))
 import Fermions (annihilateFermion, createFermion, fermionSum)
 import MonoVec (Op, MonoVec (..))
 import Control.Lens ((^.))
-import qualified Block (BlockOperator, (+), build)
+import qualified Block ((+), build)
 import Block (BlockOperator)
 
 

@@ -9,7 +9,7 @@ import qualified BlockDiagonal as BlockDiag
 import Yukawa (buildPotential, getCouplings, freeHamiltonianOp, particleEnergy, buildPositionalNumberOpFourier)
 import Utils (Serializable(serialize))
 import qualified Config
-import qualified Config as Config.Config
+import Tests (test7)
 
 main :: IO ()
 main = run
@@ -23,20 +23,22 @@ run = do
   let config = case result of
        Left errs -> error errs
        Right x -> x
-  let nF = Config.nFermionModes config
-  let nB = Config.nBosonModes config
+  let fermionConfig = Config.fermionConfig config
+  let bosonConfig = Config.bosonConfig config
+  let nF = Config.nModes fermionConfig
+  let nB = Config.nModes bosonConfig
   let fermionKs = oddKRange nF
   let bosonKs = oddKRange nB
-  let fermions = concatMap (makeNFermions nF) [Config.Config.minFermionNumber config .. Config.maxFermionNumber config]
-  let bosons = concatMap (makeNBosons nB) [Config.minBosonNumber config .. Config.maxBosonNumber config]
+  let fermions = concatMap (makeNFermions nF) $ Config.getNumberRange fermionConfig
+  let bosons = concatMap (makeNBosons nB) $ Config.getNumberRange bosonConfig
   let kets = [Ket f b | f <- fermions, b <- bosons]
   let ketMap = newKetMap (ketQNumber fermionKs bosonKs) kets
   let couplings = getCouplings fermionKs bosonKs
   let potential = buildPotential couplings ketMap
   let len = Config.length config
   let h0 = freeHamiltonianOp fermionEs bosonEs
-      fermionEs = map (particleEnergy (Config.fermionMass config) . getMomentum len) fermionKs
-      bosonEs = map (particleEnergy (Config.bosonMass config) . getMomentum len) bosonKs
+      fermionEs = map (particleEnergy (Config.mass fermionConfig) . getMomentum len) fermionKs
+      bosonEs = map (particleEnergy (Config.mass bosonConfig) . getMomentum len) bosonKs
   let adagaF k l = liftFermionOp (annihilateFermion (kToMode nF l) >=> createFermion (kToMode nF k))
   let adagaB k l = liftBosonOp (annihilateBoson (kToMode nB l) >=> createBoson (kToMode nB k))
   let fermiPosOps = [buildPositionalNumberOpFourier adagaF fermionKs ketMap k | k <- fermionKs]
@@ -49,5 +51,5 @@ run = do
         ] <> [
           withDataHeaderFooter ("bosePosOp " <> show k) (serialize op) | (k, op) <- zip bosonKs bosePosOps
         ]
-  writeFile "out.txt" out
+  writeFile (Config.outputPath config) out
 

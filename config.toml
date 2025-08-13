@@ -1,11 +1,14 @@
-fermionMass = 1.0
-bosonMass = 0.5
-length = 10.0
-nFermionModes = 3
-nBosonModes = 3
+length = 20.0
+outputPath = "./out.txt"
 
-minBosonNumber = 0
-maxBosonNumber = 2
+[fermions]
+mass = 1.0
+nModes = 11
+minNumber = 1
+maxNumber = 2
 
-minFermionNumber = 2
-maxFermionNumber = 2
+[bosons]
+mass = 0.5
+nModes = 11
+minNumber = 0
+maxNumber = 3

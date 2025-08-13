@@ -14,6 +14,9 @@ import Data.Bifunctor (bimap)
 import Utils (Serializable(serialize))
 import Data.List (nub)
 
+test7 :: IO ()
+test7 = print $ makeNBosons 3 2
+
 test6 :: IO ()
 test6 = do
   let ks = oddKRange 5

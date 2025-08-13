@@ -8,8 +8,6 @@ import Utils (zipMapsWith, Serializable (..))
 import Data.List (nub)
 
 
-
-
 newtype Bosons = Bosons (Map Mode Count)
   deriving Show
 
