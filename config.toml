@@ -3,12 +3,12 @@ outputPath = "./out.txt"
 
 [fermions]
 mass = 1.0
-nModes = 11
+nModes = 19
 minNumber = 1
 maxNumber = 2
 
 [bosons]
 mass = 0.5
-nModes = 11
+nModes = 19
 minNumber = 0
-maxNumber = 3
+maxNumber = 2

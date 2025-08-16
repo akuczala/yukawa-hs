@@ -9,7 +9,6 @@ import qualified BlockDiagonal as BlockDiag
 import Yukawa (buildPotential, getCouplings, freeHamiltonianOp, particleEnergy, buildPositionalNumberOpFourier)
 import Utils (Serializable(serialize))
 import qualified Config
-import Tests (test7)
 
 main :: IO ()
 main = run
