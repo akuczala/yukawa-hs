@@ -16,32 +16,36 @@ import Data.List (intercalate)
 -- buildBasisWithLimit n pred = go initMembers where
 --   initMembers = filter pred $ [] : [[mode] | mode <-[0 .. n - 1]]
 
-data Ket = Ket {_ketFermions :: Fermions, _ketBosons :: Bosons}
+data Ket = Ket {_ketFermions :: Fermions, _ketAntifermions :: Fermions, _ketBosons :: Bosons}
   deriving (Show, Eq, Ord)
 makeLenses ''Ket
 
 instance Serializable Ket where
-  serialize k = serialize (k ^. ketFermions) <> " " <> serialize (k ^. ketBosons)
+  serialize k = serialize (k ^. ketFermions) <> " " <> serialize (k ^. ketAntifermions) <> " " <> serialize (k ^. ketBosons)
 
 liftFermionOp :: Op Fermions -> Op Ket
 liftFermionOp = ketFermions
 
+liftAntifermionOp :: Op Fermions -> Op Ket
+liftAntifermionOp = ketAntifermions
+
 liftBosonOp :: Op Bosons -> Op Ket
 liftBosonOp = ketBosons
 
-prettyKet :: Int -> Ket -> ([Int], [(Int, Int)])
-prettyKet nf ket = (asList nf $ ket ^. ketFermions, bosonToList $ ket ^. ketBosons)
+prettyKet :: Int -> Ket -> ([Int], [Int], [(Int, Int)])
+prettyKet nf ket = (asList nf $ ket ^. ketFermions, asList nf $ ket ^. ketAntifermions, bosonToList $ ket ^. ketBosons)
 
 -- todo use ⟩
 prettyPrintKet :: Int -> Ket -> String
-prettyPrintKet nf ket =  "|" <> fString <> "," <> bString <> ">" where
-  (fModes, bModes) = prettyKet nf ket
+prettyPrintKet nf ket =  "|" <> fString <> "," <> afString <> "," <> bString <> ">" where
+  (fModes, afModes, bModes) = prettyKet nf ket
   fString = unwords (map show fModes)
+  afString = unwords (map show afModes)
   bString = unwords (fmap (\(m, i) -> show m <> (if i > 1 then "_" <> show i else "")) bModes)
 
 momentumSum :: [Int] -> [Int] -> Ket -> Int
 momentumSum fermionKNumbers bosonKNumbers ket =
-  fermionSum fermionKNumbers (ket ^. ketFermions) + bosonSum bosonKNumbers (ket ^. ketBosons)
+  fermionSum fermionKNumbers (ket ^. ketFermions) + fermionSum fermionKNumbers (ket ^. ketAntifermions) + bosonSum bosonKNumbers (ket ^. ketBosons)
 
 
 data QNumbers = QNumbers {nFermions :: Int, kTot :: Int}
@@ -52,7 +56,7 @@ instance Serializable QNumbers where
 
 ketQNumber :: [Int] -> [Int] -> Ket -> QNumbers
 ketQNumber fermionKNumbers bosonKNumbers ket = QNumbers {
-  nFermions=countFermions (ket ^. ketFermions),
+  nFermions=countFermions (ket ^. ketFermions) - countFermions (ket ^. ketAntifermions),
   kTot=momentumSum fermionKNumbers bosonKNumbers ket
 }
 

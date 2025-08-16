@@ -29,6 +29,7 @@ countFermions (Fermions f) = popCount f
 fermionParity :: Fermions -> Parity
 fermionParity f = if even (countFermions f) then EvenParity else OddParity
 
+-- TODO: parity argument
 annihilateFermion :: Mode -> Op Fermions
 annihilateFermion mode (Fermions f) = if fermionOccupation mode (Fermions f) then
   let

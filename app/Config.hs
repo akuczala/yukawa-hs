@@ -17,13 +17,25 @@ data ParticleConfig = ParticleConfig
 getNumberRange :: ParticleConfig -> [Int]
 getNumberRange config = [minNumber config .. maxNumber config]
 
+data AntifermionConfig = AntifermionConfig
+  { afMinNumber :: Int
+  , afMaxNumber :: Int
+  }
+  deriving Show
+
 data Config = Config
   { outputPath :: String
   , length :: Double
   , fermionConfig :: ParticleConfig
+  , antifermionConfig :: AntifermionConfig
   , bosonConfig :: ParticleConfig
   }
   deriving Show
+
+antifermionConfigCodec :: TomlCodec AntifermionConfig
+antifermionConfigCodec = AntifermionConfig
+  <$> Toml.int "minNumber" .= afMinNumber
+  <*> Toml.int "maxNumber" .= afMaxNumber
 
 particleConfigCodec :: TomlCodec ParticleConfig
 particleConfigCodec = ParticleConfig
@@ -37,6 +49,7 @@ configCodec = Config
   <$> Toml.string "outputPath" .= outputPath
   <*> Toml.double "length" .= Config.length
   <*> Toml.table particleConfigCodec "fermions" .= fermionConfig
+  <*> Toml.table antifermionConfigCodec "antifermions" .= antifermionConfig
   <*> Toml.table particleConfigCodec "bosons" .= bosonConfig
 
 formatErrors :: [TomlDecodeError] -> String

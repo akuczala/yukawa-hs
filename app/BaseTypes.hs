@@ -16,6 +16,14 @@ type Count = Int
 
 
 data Parity = EvenParity | OddParity
+instance Semigroup Parity where
+  EvenParity <> EvenParity = EvenParity
+  OddParity <> OddParity = EvenParity
+  _ <> _ = OddParity
+
+instance Monoid Parity where
+  mempty = EvenParity
+
 
 toSign :: Parity -> Int
 toSign EvenParity = 1

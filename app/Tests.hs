@@ -42,7 +42,7 @@ test4 = do
   -- let fermions = allFermions n
   let fermions = makeNFermions n 2
   let bosons = nub $ bosonVacuum : singleBosons n <> makeNBosons n 2
-  let kets = [Ket f b | f <- fermions, b <- bosons]
+  let kets = [Ket f fermionVacuum b | f <- fermions, b <- bosons]
   let ketMap = newKetMap (ketQNumber fermionKs bosonKs) kets
   let couplings = getCouplings fermionKs bosonKs
   -- print couplings
@@ -73,12 +73,12 @@ test3 = do
   let fermions = fermionVacuum : singleFermions n <> makeNFermions n 2
   -- let bosons = bosonVacuum : singleBosons n <> nBosons n 2
   let bosons = bosonVacuum : makeNBosons n 2
-  let kets = [Ket f b | f <- fermions, b <- bosons]
+  let kets = [Ket f fermionVacuum b | f <- fermions, b <- bosons]
   let ketMap = newKetMap (ketQNumber fermionKNumbers bosonKNumbers) kets
   --print $ fmap (first $ prettyPrintKet n) . Map.toList <$> qnumToStatesToIndex ketMap
   let targetIndex = 2
   let testOp = liftBosonOp (annihilateBoson targetIndex) >=> liftBosonOp (createBoson targetIndex)
-  let testKet = Ket (singleFermion targetIndex) (singleBoson targetIndex)
+  let testKet = Ket (singleFermion targetIndex) fermionVacuum (singleBoson targetIndex)
   --print $ Map.lookup testKet $ stateToQNum ketMap  
   let testMv = testOp testKet
   let outKet = case testMv of
@@ -97,7 +97,7 @@ test2 = do
   let fermionKNumbers = oddKRange n
   let bosonKNumbers = fermionKNumbers
   print fermionKNumbers
-  let kets = [Ket f b | f <- singleFermions n, b <- singleBosons n ]
+  let kets = [Ket f fermionVacuum b | f <- singleFermions n, b <- singleBosons n ]
   let ketMap = newKetMap (ketQNumber fermionKNumbers bosonKNumbers) kets
   print $ Map.toList $ unwords . map (prettyPrintKet n) <$> qnumToStates ketMap
 
