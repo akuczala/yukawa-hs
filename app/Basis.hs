@@ -2,38 +2,49 @@
 
 module Basis where
 import BaseTypes (enumerate)
-import Fermions (Fermions, fermionSum, countFermions, asList)
+import Fermions (fermionSum, countFermions, asList, Fermions)
 import Bosons
 import Control.Lens.TH ( makeLenses )
-import Control.Lens ((^.))
+import Control.Lens ((^.), Getter)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import MonoVec (Op)
 import Utils (Serializable (serialize))
 import Data.List (intercalate)
+import Dirac (DiracFermions, getBFermions, getDFermions, liftToBModeOp, liftToDModeOp)
 
 -- buildBasisWithLimit :: Count -> ([Count] -> Bool) -> [[Mode]]
 -- buildBasisWithLimit n pred = go initMembers where
 --   initMembers = filter pred $ [] : [[mode] | mode <-[0 .. n - 1]]
 
-data Ket = Ket {_ketFermions :: Fermions, _ketAntifermions :: Fermions, _ketBosons :: Bosons}
+
+data Ket = Ket {_ketFermions :: DiracFermions, _ketBosons :: Bosons}
   deriving (Show, Eq, Ord)
 makeLenses ''Ket
 
+ketBFermions :: Getter Ket Fermions
+ketBFermions = ketFermions . getBFermions
+
+ketDFermions :: Getter Ket Fermions
+ketDFermions = ketFermions . getDFermions
+
+liftBFermionOp :: (Int -> Op Fermions) -> (Int -> Op Ket)
+liftBFermionOp opk = ketFermions . liftToBModeOp opk
+
+liftDFermionOp :: (Int -> Op Fermions) -> (Int -> Op Ket)
+liftDFermionOp opk = ketFermions . liftToDModeOp opk
+
 instance Serializable Ket where
-  serialize k = serialize (k ^. ketFermions) <> " " <> serialize (k ^. ketAntifermions) <> " " <> serialize (k ^. ketBosons)
+  serialize k = serialize (k ^. ketBFermions) <> " " <> serialize (k ^. ketDFermions) <> " " <> serialize (k ^. ketBosons)
 
-liftFermionOp :: Op Fermions -> Op Ket
+liftFermionOp :: Op DiracFermions -> Op Ket
 liftFermionOp = ketFermions
-
-liftAntifermionOp :: Op Fermions -> Op Ket
-liftAntifermionOp = ketAntifermions
 
 liftBosonOp :: Op Bosons -> Op Ket
 liftBosonOp = ketBosons
 
 prettyKet :: Int -> Ket -> ([Int], [Int], [(Int, Int)])
-prettyKet nf ket = (asList nf $ ket ^. ketFermions, asList nf $ ket ^. ketAntifermions, bosonToList $ ket ^. ketBosons)
+prettyKet nf ket = (asList nf (ket ^. ketBFermions), asList nf (ket ^. ketDFermions), bosonToList $ ket ^. ketBosons)
 
 -- todo use ⟩
 prettyPrintKet :: Int -> Ket -> String
@@ -45,7 +56,7 @@ prettyPrintKet nf ket =  "|" <> fString <> "," <> afString <> "," <> bString <> 
 
 momentumSum :: [Int] -> [Int] -> Ket -> Int
 momentumSum fermionKNumbers bosonKNumbers ket =
-  fermionSum fermionKNumbers (ket ^. ketFermions) + fermionSum fermionKNumbers (ket ^. ketAntifermions) + bosonSum bosonKNumbers (ket ^. ketBosons)
+  fermionSum fermionKNumbers (ket ^. ketBFermions) + fermionSum fermionKNumbers (ket ^. ketDFermions) + bosonSum bosonKNumbers (ket ^. ketBosons)
 
 
 data QNumbers = QNumbers {nFermions :: Int, kTot :: Int}
@@ -56,7 +67,7 @@ instance Serializable QNumbers where
 
 ketQNumber :: [Int] -> [Int] -> Ket -> QNumbers
 ketQNumber fermionKNumbers bosonKNumbers ket = QNumbers {
-  nFermions=countFermions (ket ^. ketFermions) - countFermions (ket ^. ketAntifermions),
+  nFermions=countFermions (ket ^. ketBFermions) - countFermions (ket ^. ketDFermions),
   kTot=momentumSum fermionKNumbers bosonKNumbers ket
 }
 

@@ -3,7 +3,7 @@ module Fermions where
 import BaseTypes(Mode, Parity(..), toSign, Size, enumerate)
 import MonoVec(MonoVec(..), Op)
 
-import Data.Bits (Bits(popCount, shiftL, complement, (.&.)), testBit)
+import Data.Bits (Bits(popCount, shiftL, shiftR, complement, (.&.)), testBit)
 import Control.Monad ((>=>), guard)
 import GHC.Bits (setBit, Bits ((.|.), xor))
 import Utils (Serializable (..))
@@ -13,6 +13,21 @@ import Data.List (nub)
 
 newtype Fermions = Fermions Int
   deriving (Show, Eq, Ord)
+
+firstNModes :: Size  -> Int
+firstNModes i = i
+
+lastNModes :: Size -> Int -> Int
+lastNModes n i = n + i
+
+concatFermions :: Size -> Fermions -> Fermions -> Fermions
+concatFermions nf (Fermions bf) (Fermions df) = Fermions $ bf + (df `shiftL` nf)
+
+firstNFermions :: Size -> Fermions -> Fermions
+firstNFermions n (Fermions f) = Fermions $ f `shiftR` n
+
+lastNFermions :: Size -> Fermions -> Fermions
+lastNFermions n (Fermions f) = Fermions $ f .&. (1 `shiftL` n - 1)
 
 allFermions :: Size -> [Fermions]
 allFermions n = fmap Fermions [0 .. 2 ^ n - 1]
@@ -29,7 +44,6 @@ countFermions (Fermions f) = popCount f
 fermionParity :: Fermions -> Parity
 fermionParity f = if even (countFermions f) then EvenParity else OddParity
 
--- TODO: parity argument
 annihilateFermion :: Mode -> Op Fermions
 annihilateFermion mode (Fermions f) = if fermionOccupation mode (Fermions f) then
   let

@@ -22,6 +22,7 @@ instance Semigroup Parity where
   _ <> _ = OddParity
 
 instance Monoid Parity where
+  mempty :: Parity
   mempty = EvenParity
 
 

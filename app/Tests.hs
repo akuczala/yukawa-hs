@@ -13,6 +13,29 @@ import Yukawa (buildPotential, getCouplings, freeHamiltonianOp, particleEnergy)
 import Data.Bifunctor (bimap)
 import Utils (Serializable(serialize))
 import Data.List (nub)
+import Dirac (makeDiracFermions, getBFermions, getDFermions, liftToBModeOp, liftToDModeOp)
+import Control.Lens ((^.))
+
+test8 :: IO ()
+test8 = do
+    let nf = 3
+    let f1 = makeDiracFermions nf (Fermions 5) (Fermions 7)
+    let f2 = makeDiracFermions nf fermionVacuum (singleFermion 0)
+    print f1
+    print $ f1 ^. getBFermions
+    print $ f1 ^. getDFermions
+    print f2
+    print $ f2 ^. getBFermions
+    print $ f2 ^. getDFermions
+    let vac = makeDiracFermions nf fermionVacuum fermionVacuum
+    let f3 = mvKet $ liftToBModeOp createFermion 0 vac
+    print f3
+    print $ f3 ^. getBFermions
+    print $ f3 ^. getDFermions
+    let f4 = mvKet $ liftToDModeOp createFermion 0 vac
+    print f4
+    print $ f4 ^. getBFermions
+    print $ f4 ^. getDFermions
 
 test7 :: IO ()
 test7 = print $ makeNBosons 3 2
@@ -42,7 +65,7 @@ test4 = do
   -- let fermions = allFermions n
   let fermions = makeNFermions n 2
   let bosons = nub $ bosonVacuum : singleBosons n <> makeNBosons n 2
-  let kets = [Ket f fermionVacuum b | f <- fermions, b <- bosons]
+  let kets = [Ket (makeDiracFermions n f fermionVacuum) b | f <- fermions, b <- bosons]
   let ketMap = newKetMap (ketQNumber fermionKs bosonKs) kets
   let couplings = getCouplings fermionKs bosonKs
   -- print couplings
@@ -73,12 +96,13 @@ test3 = do
   let fermions = fermionVacuum : singleFermions n <> makeNFermions n 2
   -- let bosons = bosonVacuum : singleBosons n <> nBosons n 2
   let bosons = bosonVacuum : makeNBosons n 2
-  let kets = [Ket f fermionVacuum b | f <- fermions, b <- bosons]
+  let makeFermions f = makeDiracFermions n f fermionVacuum
+  let kets = [Ket (makeFermions f) b | f <- fermions, b <- bosons]
   let ketMap = newKetMap (ketQNumber fermionKNumbers bosonKNumbers) kets
   --print $ fmap (first $ prettyPrintKet n) . Map.toList <$> qnumToStatesToIndex ketMap
   let targetIndex = 2
   let testOp = liftBosonOp (annihilateBoson targetIndex) >=> liftBosonOp (createBoson targetIndex)
-  let testKet = Ket (singleFermion targetIndex) fermionVacuum (singleBoson targetIndex)
+  let testKet = Ket (makeFermions (singleFermion targetIndex)) (singleBoson targetIndex)
   --print $ Map.lookup testKet $ stateToQNum ketMap  
   let testMv = testOp testKet
   let outKet = case testMv of
@@ -96,8 +120,9 @@ test2 = do
   let n = 3
   let fermionKNumbers = oddKRange n
   let bosonKNumbers = fermionKNumbers
+  let makeFermions f = makeDiracFermions n f fermionVacuum
   print fermionKNumbers
-  let kets = [Ket f fermionVacuum b | f <- singleFermions n, b <- singleBosons n ]
+  let kets = [Ket (makeFermions f) b | f <- singleFermions n, b <- singleBosons n ]
   let ketMap = newKetMap (ketQNumber fermionKNumbers bosonKNumbers) kets
   print $ Map.toList $ unwords . map (prettyPrintKet n) <$> qnumToStates ketMap
 

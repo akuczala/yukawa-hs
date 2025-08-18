@@ -1,6 +1,6 @@
 module Yukawa where
-import BaseTypes (Mass, Momentum, Energy, enumerate, Phase)
-import Basis (KetMap, liftBosonOp, Ket, liftFermionOp, ketFermions, ketBosons, ketAntifermions, liftAntifermionOp)
+import BaseTypes (Mass, Momentum, Energy, enumerate, Phase, Size)
+import Basis (KetMap, liftBosonOp, Ket, ketBosons, ketBFermions, ketDFermions, liftBFermionOp, liftDFermionOp)
 import BlockDiagonal ( BlockDiagonalOperator )
 import qualified BlockDiagonal as BlockDiag
 import Bosons (annihilateBoson, bosonSum, createBoson)
@@ -24,17 +24,17 @@ particleEnergy m p = sqrt $ p * p + m * m
 
 freeHamiltonianOp :: [Energy] -> [Energy] -> Op Ket
 freeHamiltonianOp fermionEs bosonEs k = MonoVec e k where
-  e = fermionSum fermionEs (k ^. ketFermions) + fermionSum fermionEs (k ^. ketAntifermions) + bosonSum bosonEs (k ^. ketBosons)
+  e = fermionSum fermionEs (k ^. ketBFermions) + fermionSum fermionEs (k ^. ketDFermions) + bosonSum bosonEs (k ^. ketBosons)
 
 buildPotential :: (Ord q) => [(Int, Int, Int)] -> KetMap q Ket -> BlockDiagonalOperator q Phase
 buildPotential couplings ketMap = foldl1 (BlockDiag.+) (map buildBDO couplings) where
   buildBDO (k, l, q) = foldl1 (BlockDiag.+) $ map (`BlockDiag.build` ketMap) ops where
-    a k = liftBosonOp $ annihilateBoson k
-    at k = liftBosonOp $ createBoson k
-    b k = liftFermionOp $ annihilateFermion k
-    bt k = liftFermionOp $ createFermion k
-    d k = liftAntifermionOp $ annihilateFermion k
-    dt k = liftAntifermionOp $ createFermion k
+    a = liftBosonOp . annihilateBoson
+    at = liftBosonOp . createBoson
+    b = liftBFermionOp annihilateFermion
+    bt = liftBFermionOp createFermion
+    d = liftDFermionOp annihilateFermion
+    dt = liftDFermionOp createFermion
     ops = [ a q >=> b k >=> bt l
           , a q >=> d k >=> dt l
           , a q >=> b l >=> d k

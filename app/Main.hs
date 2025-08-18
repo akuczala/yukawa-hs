@@ -2,7 +2,7 @@ module Main where
 
 import Fermions as F
 import Bosons (createBoson, annihilateBoson, makeNBosons)
-import Basis (newKetMap, ketQNumber, Ket (..), liftBosonOp, liftFermionOp, liftAntifermionOp)
+import Basis (newKetMap, ketQNumber, Ket (..), liftBosonOp, liftFermionOp, liftBFermionOp, liftDFermionOp)
 import Fourier (oddKRange, getMomentum, kToMode)
 import Control.Monad ((>=>))
 import qualified BlockDiagonal as BlockDiag
@@ -10,6 +10,8 @@ import Yukawa (buildPotential, getCouplings, freeHamiltonianOp, particleEnergy, 
 import Utils (Serializable(serialize))
 import qualified Config
 import Config (AntifermionConfig(..))
+import Dirac (makeDiracFermions)
+import Tests (test8)
 
 main :: IO ()
 main = run
@@ -31,9 +33,9 @@ run = do
   let fermionKs = oddKRange nF
   let bosonKs = oddKRange nB
   let fermions = concatMap (makeNFermions nF) $ Config.getNumberRange fermionConfig
-  let antifermions = concatMap (makeNFermions nF) $ [afMinNumber antifermionConfig .. afMaxNumber antifermionConfig]
+  let antifermions = concatMap (makeNFermions nF) [afMinNumber antifermionConfig .. afMaxNumber antifermionConfig]
   let bosons = concatMap (makeNBosons nB) $ Config.getNumberRange bosonConfig
-  let kets = [Ket f af b | f <- fermions, af <- antifermions, b <- bosons]
+  let kets = [Ket (makeDiracFermions nF f af) b| f <- fermions, af <- antifermions, b <- bosons]
   let ketMap = newKetMap (ketQNumber fermionKs bosonKs) kets
   let couplings = getCouplings fermionKs bosonKs
   let potential = buildPotential couplings ketMap
@@ -41,8 +43,8 @@ run = do
   let h0 = freeHamiltonianOp fermionEs bosonEs
       fermionEs = map (particleEnergy (Config.mass fermionConfig) . getMomentum len) fermionKs
       bosonEs = map (particleEnergy (Config.mass bosonConfig) . getMomentum len) bosonKs
-  let bdagb k l = liftFermionOp (annihilateFermion (kToMode nF l) >=> createFermion (kToMode nF k))
-  let ddagd k l = liftAntifermionOp (annihilateFermion (kToMode nF l) >=> createFermion (kToMode nF k))
+  let bdagb k l =  liftBFermionOp annihilateFermion (kToMode nF l) >=> liftBFermionOp createFermion (kToMode nF k)
+  let ddagd k l = liftDFermionOp annihilateFermion (kToMode nF l) >=> liftDFermionOp createFermion (kToMode nF k)
   let adaga k l = liftBosonOp (annihilateBoson (kToMode nB l) >=> createBoson (kToMode nB k))
   let fermiPosOps = [buildPositionalNumberOpFourier bdagb fermionKs ketMap k | k <- fermionKs]
   let antifermiPosOps = [buildPositionalNumberOpFourier ddagd fermionKs ketMap k | k <- fermionKs]
