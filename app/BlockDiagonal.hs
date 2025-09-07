@@ -42,3 +42,6 @@ instance (Serializable q, Show a) => Serializable (BlockDiagonalOperator q a) wh
   serialize (BlockDiagonalOperator b) = intercalate "\n" $ map perSector $ Map.toList b where
     perSector (q, m) = serialize q <> ": " <> show (map perEntry (Map.toList m))
     perEntry ((i, j), ph) = (i, j, ph)
+
+nElements :: BlockDiagonalOperator q a -> Map q Int
+nElements (BlockDiagonalOperator b) = fmap Map.size b 

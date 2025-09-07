@@ -11,7 +11,7 @@ import Data.Maybe (catMaybes)
 import Data.List (nub)
 
 
-newtype Fermions = Fermions Int
+newtype Fermions = Fermions Integer
   deriving (Show, Eq, Ord)
 
 firstNModes :: Size  -> Int

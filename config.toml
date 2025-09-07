@@ -3,7 +3,7 @@ outputPath = "./out.txt"
 
 [fermions]
 mass = 1.0
-nModes = 5
+nModes = 25
 minNumber = 0
 maxNumber = 1
 
@@ -13,6 +13,14 @@ maxNumber = 1
 
 [bosons]
 mass = 0.5
-nModes = 5
+nModes = 25
 minNumber = 0
 maxNumber = 2
+
+[write]
+ketMap = false
+H0 = true
+V = true
+fermiPosOps = true
+antifermiPosOps = true
+bosonPosOps = true

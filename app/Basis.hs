@@ -73,6 +73,8 @@ ketQNumber fermionKNumbers bosonKNumbers ket = QNumbers {
 
 data KetMap q k = KetMap {stateToQNum :: Map k q, qnumToStatesToIndex :: Map q (Map k Int)}
 
+newtype BlockSizes q = BlockSizes (Map q Int)
+
 newKetMap :: (Ord k, Ord q) => (k -> q) -> [k] -> KetMap q k
 newKetMap fromKet allKets = let
   kToQ = [(k, fromKet k) | k <- allKets]
@@ -85,7 +87,14 @@ newKetMap fromKet allKets = let
 qnumToStates :: KetMap q k -> Map q [k]
 qnumToStates ketMap = fmap (fmap fst . Map.toList) (qnumToStatesToIndex ketMap)
 
+getBlockSizes :: KetMap q k -> BlockSizes q
+getBlockSizes ketMap = BlockSizes $ Map.size <$> qnumToStatesToIndex ketMap
+
 instance (Serializable q, Serializable k) => Serializable (KetMap q k) where
     serialize ketMap = intercalate "\n" $ map perSector (Map.toList $ qnumToStatesToIndex ketMap) where
       perSector (q, m) = serialize q <> "\n" <> intercalate "\n" (map perKetIndex (Map.toList m))
       perKetIndex (k, i) = show i <> ": " <> serialize k
+
+instance Serializable k => Serializable (BlockSizes k) where
+  serialize (BlockSizes sizeMap) = unlines $ map perSector $ Map.toList sizeMap where
+    perSector (q, n) = serialize q <> ": " <> show n

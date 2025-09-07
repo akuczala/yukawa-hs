@@ -36,6 +36,10 @@ test8 = do
     print f4
     print $ f4 ^. getBFermions
     print $ f4 ^. getDFermions
+    let f5 = (liftToDModeOp createFermion 0 >=> liftToBModeOp createFermion 0) vac
+    let f6 = (liftToBModeOp createFermion 0 >=> liftToDModeOp createFermion 0) vac
+    print f5
+    print f6
 
 test7 :: IO ()
 test7 = print $ makeNBosons 3 2

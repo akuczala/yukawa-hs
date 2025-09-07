@@ -2,7 +2,7 @@ module Main where
 
 import Fermions as F
 import Bosons (createBoson, annihilateBoson, makeNBosons)
-import Basis (newKetMap, ketQNumber, Ket (..), liftBosonOp, liftFermionOp, liftBFermionOp, liftDFermionOp)
+import Basis (newKetMap, ketQNumber, Ket (..), liftBosonOp, liftBFermionOp, liftDFermionOp, getBlockSizes)
 import Fourier (oddKRange, getMomentum, kToMode)
 import Control.Monad ((>=>))
 import qualified BlockDiagonal as BlockDiag
@@ -11,7 +11,9 @@ import Utils (Serializable(serialize))
 import qualified Config
 import Config (AntifermionConfig(..))
 import Dirac (makeDiracFermions)
-import Tests (test8)
+import Tests (test5)
+import qualified Data.Map as Map
+import Data.Maybe (fromMaybe, catMaybes)
 
 main :: IO ()
 main = run
@@ -49,15 +51,22 @@ run = do
   let fermiPosOps = [buildPositionalNumberOpFourier bdagb fermionKs ketMap k | k <- fermionKs]
   let antifermiPosOps = [buildPositionalNumberOpFourier ddagd fermionKs ketMap k | k <- fermionKs]
   let bosePosOps = [buildPositionalNumberOpFourier adaga bosonKs ketMap k | k <- bosonKs]
-  let out = unlines $ [ withDataHeaderFooter "ketMap" (serialize ketMap)
-        , withDataHeaderFooter "H0" (serialize (BlockDiag.build h0 ketMap))
-        , withDataHeaderFooter "V" (serialize potential)
+  -- print $ Map.elems $ BlockDiag.nElements potential
+  let wc = Config.writeConfig config
+  let possibleStr field str = if fromMaybe True $ field wc then Just str else Nothing
+  let out = unlines . catMaybes $
+        [
+          Just $ withDataHeaderFooter "blockSizes" (serialize . getBlockSizes $ ketMap)
+        ] <>
+        [ possibleStr Config.writeKetMap $ withDataHeaderFooter "ketMap" (serialize ketMap)
+        , possibleStr Config.writeH0 $ withDataHeaderFooter "H0" (serialize (BlockDiag.build h0 ketMap))
+        , possibleStr Config.writeV $ withDataHeaderFooter "V" (serialize potential)
         ] <> [
-          withDataHeaderFooter ("fermiPosOp " <> show k) (serialize op) | (k, op) <- zip fermionKs fermiPosOps
+          possibleStr Config.writeFermiPosOps $ withDataHeaderFooter ("fermiPosOp " <> show k) (serialize op) | (k, op) <- zip fermionKs fermiPosOps
         ] <> [
-          withDataHeaderFooter ("antifermiPosOp " <> show k) (serialize op) | (k, op) <- zip fermionKs antifermiPosOps
+          possibleStr Config.writeAntifermiPosOps $ withDataHeaderFooter ("antifermiPosOp " <> show k) (serialize op) | (k, op) <- zip fermionKs antifermiPosOps
         ] <> [
-          withDataHeaderFooter ("bosePosOp " <> show k) (serialize op) | (k, op) <- zip bosonKs bosePosOps
+          possibleStr Config.writeBosonPosOps $ withDataHeaderFooter ("bosePosOp " <> show k) (serialize op) | (k, op) <- zip bosonKs bosePosOps
         ]
   writeFile (Config.outputPath config) out
 
