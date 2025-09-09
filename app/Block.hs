@@ -1,6 +1,6 @@
 module Block where
 import Data.Map (Map)
-import Utils (zipMapsWith, Serializable (..))
+import Utils (zipMapsWith)
 import MonoVec (Op, MonoVec (..))
 import Basis (KetMap (..))
 import BaseTypes (Phase)
@@ -33,8 +33,3 @@ build op ketMap = BlockOperator $ Map.foldlWithKey go Map.empty (qnumToStatesToI
 (+) :: (Ord q, Num a) => BlockOperator q a -> BlockOperator q a -> BlockOperator q a
 (+) = Block.zipWith (Prelude.+)
 
-instance (Serializable q, Show a) => Serializable (BlockOperator q a) where
-  serialize :: BlockOperator q a -> String
-  serialize (BlockOperator b) = intercalate "\n" $ map perSector $ Map.toList b where
-    perSector (qq, m) = serialize qq <> ": " <> show (map perEntry (Map.toList m))
-    perEntry ((i, j), ph) = (i, j, ph)

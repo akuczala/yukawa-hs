@@ -7,13 +7,11 @@ import Fourier (oddKRange, getMomentum, kToMode)
 import Control.Monad ((>=>))
 import qualified BlockDiagonal as BlockDiag
 import Yukawa (buildPotential, getCouplings, freeHamiltonianOp, particleEnergy, buildPositionalNumberOpFourier)
-import Utils (Serializable(serialize))
 import qualified Config
 import Config (AntifermionConfig(..))
 import Dirac (makeDiracFermions)
-import Tests (test5)
-import qualified Data.Map as Map
 import Data.Maybe (fromMaybe, catMaybes)
+import Serialization (Serializable(serialize))
 
 main :: IO ()
 main = run

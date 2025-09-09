@@ -6,7 +6,6 @@ import MonoVec(MonoVec(..), Op)
 import Data.Bits (Bits(popCount, shiftL, shiftR, complement, (.&.)), testBit)
 import Control.Monad ((>=>), guard)
 import GHC.Bits (setBit, Bits ((.|.), xor))
-import Utils (Serializable (..))
 import Data.Maybe (catMaybes)
 import Data.List (nub)
 
@@ -96,5 +95,3 @@ asList size f = [ mode | mode <- [0 .. size - 1], fermionOccupation mode f ]
 fermionSum :: Num a => [a] -> Fermions -> a
 fermionSum as f = sum $ [a | (k, a) <- enumerate as, fermionOccupation k f] 
 
-instance Serializable Fermions where
-  serialize (Fermions f) = show f

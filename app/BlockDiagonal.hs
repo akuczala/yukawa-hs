@@ -6,8 +6,7 @@ import MonoVec (Op, MonoVec (..))
 import Data.Maybe (fromMaybe)
 import Basis (KetMap (..))
 import BaseTypes (Phase)
-import Utils (zipMapsWith, Serializable(..))
-import Data.List (intercalate)
+import Utils (zipMapsWith)
 
 newtype BlockDiagonalOperator q a = BlockDiagonalOperator (Map q (Map (Int, Int) a))
   deriving Functor
@@ -36,12 +35,6 @@ build op ketMap = BlockDiagonalOperator $ fmap perSector (qnumToStatesToIndex ke
 
 (-) :: (Ord q, Num a) => BlockDiagonalOperator q a -> BlockDiagonalOperator q a -> BlockDiagonalOperator q a
 (-) = BlockDiagonal.zipWith (Prelude.-)
-
-instance (Serializable q, Show a) => Serializable (BlockDiagonalOperator q a) where
-  serialize :: BlockDiagonalOperator q a -> String
-  serialize (BlockDiagonalOperator b) = intercalate "\n" $ map perSector $ Map.toList b where
-    perSector (q, m) = serialize q <> ": " <> show (map perEntry (Map.toList m))
-    perEntry ((i, j), ph) = (i, j, ph)
 
 nElements :: BlockDiagonalOperator q a -> Map q Int
 nElements (BlockDiagonalOperator b) = fmap Map.size b 

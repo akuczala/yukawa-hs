@@ -11,7 +11,7 @@ import qualified BlockDiagonal as BlockDiag
 import BlockDiagonal(BlockDiagonalOperator(..))
 import Yukawa (buildPotential, getCouplings, freeHamiltonianOp, particleEnergy)
 import Data.Bifunctor (bimap)
-import Utils (Serializable(serialize))
+import Serialization (Serializable(serialize))
 import Data.List (nub)
 import Dirac (makeDiracFermions, getBFermions, getDFermions, liftToBModeOp, liftToDModeOp)
 import Control.Lens ((^.))

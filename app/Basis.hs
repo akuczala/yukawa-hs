@@ -9,7 +9,6 @@ import Control.Lens ((^.), Getter)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import MonoVec (Op)
-import Utils (Serializable (serialize))
 import Data.List (intercalate)
 import Dirac (DiracFermions, getBFermions, getDFermions, liftToBModeOp, liftToDModeOp)
 
@@ -33,9 +32,6 @@ liftBFermionOp opk = ketFermions . liftToBModeOp opk
 
 liftDFermionOp :: (Int -> Op Fermions) -> (Int -> Op Ket)
 liftDFermionOp opk = ketFermions . liftToDModeOp opk
-
-instance Serializable Ket where
-  serialize k = serialize (k ^. ketBFermions) <> " " <> serialize (k ^. ketDFermions) <> " " <> serialize (k ^. ketBosons)
 
 liftFermionOp :: Op DiracFermions -> Op Ket
 liftFermionOp = ketFermions
@@ -62,9 +58,6 @@ momentumSum fermionKNumbers bosonKNumbers ket =
 data QNumbers = QNumbers {nFermions :: Int, kTot :: Int}
   deriving (Show, Eq, Ord)
 
-instance Serializable QNumbers where
-  serialize q = "Q " <> show (nFermions q) <> " " <> show (kTot q)
-
 ketQNumber :: [Int] -> [Int] -> Ket -> QNumbers
 ketQNumber fermionKNumbers bosonKNumbers ket = QNumbers {
   nFermions=countFermions (ket ^. ketBFermions) - countFermions (ket ^. ketDFermions),
@@ -89,12 +82,3 @@ qnumToStates ketMap = fmap (fmap fst . Map.toList) (qnumToStatesToIndex ketMap)
 
 getBlockSizes :: KetMap q k -> BlockSizes q
 getBlockSizes ketMap = BlockSizes $ Map.size <$> qnumToStatesToIndex ketMap
-
-instance (Serializable q, Serializable k) => Serializable (KetMap q k) where
-    serialize ketMap = intercalate "\n" $ map perSector (Map.toList $ qnumToStatesToIndex ketMap) where
-      perSector (q, m) = serialize q <> "\n" <> intercalate "\n" (map perKetIndex (Map.toList m))
-      perKetIndex (k, i) = show i <> ": " <> serialize k
-
-instance Serializable k => Serializable (BlockSizes k) where
-  serialize (BlockSizes sizeMap) = unlines $ map perSector $ Map.toList sizeMap where
-    perSector (q, n) = serialize q <> ": " <> show n

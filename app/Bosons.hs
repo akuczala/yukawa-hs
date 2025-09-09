@@ -4,7 +4,7 @@ import qualified Data.Map as Map
 import Data.Map(Map)
 import BaseTypes
 import Control.Monad ((>=>))
-import Utils (zipMapsWith, Serializable (..))
+import Utils (zipMapsWith)
 import Data.List (nub)
 
 
@@ -70,6 +70,3 @@ bosonSum as b = sum $ [a * fromIntegral (bosonOccupation k b) | (k, a) <- enumer
 
 singleBoson :: Mode -> Bosons
 singleBoson mode = Bosons $ Map.singleton mode 1
-
-instance Serializable Bosons where
-  serialize (Bosons m) = show $ Map.toList m

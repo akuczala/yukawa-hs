@@ -61,7 +61,7 @@ executable yukawa
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
-    other-modules: BaseTypes, Basis, Block, BlockDiagonal, Bosons, Config, Dirac, Fermions, Fourier, Yukawa, MonoVec, Tests, Utils
+    other-modules: BaseTypes, Basis, Block, BlockDiagonal, Bosons, Config, Dirac, Fermions, Fourier, Yukawa, MonoVec, NumpySerialization, Serialization, Tests, Utils
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
