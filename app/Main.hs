@@ -12,9 +12,10 @@ import Config (AntifermionConfig(..))
 import Dirac (makeDiracFermions)
 import Data.Maybe (fromMaybe, catMaybes)
 import Serialization (Serializable(serialize))
+import NumpySerialization (testNumpySerialize2)
 
 main :: IO ()
-main = run
+main = testNumpySerialize2
 
 withDataHeaderFooter :: String -> String -> String
 withDataHeaderFooter label s = unlines ["# " <> label, s, "##"]
