@@ -7,6 +7,7 @@ import qualified Data.ByteString.Lazy as BL
 import Data.Binary.Put (putByteString, putWord16le, putLazyByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Binary.Get (getByteString, getWord16le, getRemainingLazyByteString)
+import Data.Word (Word8, Word16)
 
 data NpyHeader = NpyHeader
   { descr     :: String        -- e.g. "<f8" (little-endian float64)
@@ -86,6 +87,33 @@ padHeader s =
 encodeList :: Binary a => [a] -> BL.ByteString
 encodeList xs = BL.concat (map encode xs)
 
+
+class HasDType a where
+  getDtype :: a -> String
+
+instance HasDType Word8 where
+  getDtype _ = "<u1"
+
+instance HasDType Word16 where
+  getDtype _ = "<u2"
+
+instance HasDType Float where
+  getDtype _ = "<f4"
+
+instance HasDType Double where
+  getDtype _ = "<f8"
+
+-- list to npy file
+listToNumpy :: forall a. (Binary a, HasDType a) => [a] -> NpyFile
+listToNumpy as = NpyFile {
+  header=NpyHeader {
+    descr=getDtype $ head as,
+    fortran=False,
+    shape=[length as]
+  },
+  payload=encodeList as
+}
+
 testObj :: NpyFile
 testObj = NpyFile {
   header=NpyHeader {
@@ -97,4 +125,4 @@ testObj = NpyFile {
 }
 
 testNumpy :: IO()
-testNumpy = encodeFile "test-write-3.npy" testObj
+testNumpy = encodeFile "test-write-3.npy" $ listToNumpy [1.5 :: Float, 0.0, 2.0]
