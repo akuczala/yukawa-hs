@@ -6,7 +6,6 @@ import Basis (KetMap (..))
 import BaseTypes (Phase)
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
-import Data.List (intercalate)
 
 newtype BlockOperator q a = BlockOperator (Map (q, q) (Map (Int, Int) a))
   deriving (Functor, Show)

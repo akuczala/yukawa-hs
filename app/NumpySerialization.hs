@@ -2,12 +2,12 @@ module NumpySerialization where
 import Data.Binary
     ( Binary(..), encodeFile, encode, putWord8, getWord8 )
 import Control.Monad (unless, when)
-import Data.Int (Int8)
 import qualified Data.ByteString.Lazy as BL
 import Data.Binary.Put (putByteString, putWord16le, putLazyByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Binary.Get (getByteString, getWord16le, getRemainingLazyByteString)
 import Data.Word (Word8, Word16)
+import GHC.Float (castFloatToWord32, castWord32ToFloat, castDoubleToWord64, castWord64ToDouble)
 
 data NpyHeader = NpyHeader
   { descr     :: String        -- e.g. "<f8" (little-endian float64)
@@ -87,7 +87,6 @@ padHeader s =
 encodeList :: Binary a => [a] -> BL.ByteString
 encodeList xs = BL.concat (map encode xs)
 
-
 class HasDType a where
   getDtype :: a -> String
 
@@ -95,13 +94,26 @@ instance HasDType Word8 where
   getDtype _ = "<u1"
 
 instance HasDType Word16 where
+  getDtype :: Word16 -> String
   getDtype _ = "<u2"
 
-instance HasDType Float where
-  getDtype _ = "<f4"
+newtype SystemFloat = SystemFloat Float
 
-instance HasDType Double where
-  getDtype _ = "<f8"
+instance Binary SystemFloat where
+  put (SystemFloat x) = put . castFloatToWord32 $ x
+  get = SystemFloat . castWord32ToFloat <$> get
+  
+instance HasDType SystemFloat where
+  getDtype _ = ">f4"
+
+newtype SystemDouble = SystemDouble Double
+
+instance Binary SystemDouble where
+  put (SystemDouble x) = put . castDoubleToWord64 $ x
+  get = SystemDouble . castWord64ToDouble <$> get
+
+instance HasDType SystemDouble where
+  getDtype _ = ">f8"
 
 -- list to npy file
 listToNumpy :: forall a. (Binary a, HasDType a) => [a] -> NpyFile
@@ -114,15 +126,5 @@ listToNumpy as = NpyFile {
   payload=encodeList as
 }
 
-testObj :: NpyFile
-testObj = NpyFile {
-  header=NpyHeader {
-    descr="<i1",
-    fortran=False,
-    shape=[5]
-  },
-  payload=encodeList [1 :: Int8, 2, 3, 4, 5]
-}
-
 testNumpy :: IO()
-testNumpy = encodeFile "test-write-3.npy" $ listToNumpy [1.5 :: Float, 0.0, 2.0]
+testNumpy = encodeFile "test-write-3.npy" . listToNumpy . map SystemDouble $ [1.5 :: Double, 1 / 3, 2.0]
