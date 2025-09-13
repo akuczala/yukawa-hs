@@ -95,7 +95,7 @@ instance HasDType Word8 where
 
 instance HasDType Word16 where
   getDtype :: Word16 -> String
-  getDtype _ = "<u2"
+  getDtype _ = ">u2"
 
 newtype SystemFloat = SystemFloat Float
 
